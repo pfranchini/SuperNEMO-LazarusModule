@@ -2,7 +2,7 @@
 
 Paolo Franchini 2020 - p.franchini@imperial.ac.uk
 
-SuperNEMO module for removing hits in order to study dead cells in the Tracker.
+SuperNEMO module to resuscitate hits in order to improve the reconstruction in the Tracker.
 
 The module removes tracker hits from the simulated data correspondent to a list of dead cells in the tracker.
 The list can be randomly generated or read from a text file.
