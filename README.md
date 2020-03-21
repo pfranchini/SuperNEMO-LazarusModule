@@ -1,6 +1,8 @@
 # SuperNEMO-LazarusModule
 
-Paolo Franchini 2020 - p.franchini@imperial.ac.uk
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/S._Apollinare_Nuovo_Resurr_Lazzaro.jpg/436px-S._Apollinare_Nuovo_Resurr_Lazzaro.jpg" alt="drawing" width="200"/>
+
+*Paolo Franchini 2020* - p.franchini@imperial.ac.uk_
 
 SuperNEMO module to resuscitate hits in order to improve the reconstruction in the Tracker.
 
