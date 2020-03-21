@@ -1,4 +1,4 @@
-# SuperNEMO-LazarusModule
+# SuperNEMO Lazarus Module
 
 <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/S._Apollinare_Nuovo_Resurr_Lazzaro.jpg/436px-S._Apollinare_Nuovo_Resurr_Lazzaro.jpg" alt="drawing" width="200"/>
 
