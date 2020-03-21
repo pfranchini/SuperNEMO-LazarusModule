@@ -4,7 +4,9 @@
 
 #==========================================================================================================
 
-INPUT="~/SuperNEMO/MC/20200305-1134/se82_2nubb-sim.brio"         # input simulated data from flsimulate
+#INPUT="~/SuperNEMO/MC/20200305-1134/se82_2nubb-sim.brio"         # input simulated data from flsimulate
+INPUT="~/SuperNEMO/MC/20200315-2347/se82_2nubb-sim.brio"         # input simulated data from flsimulate  -  10k
+
 FILE=se82_2nubb                                                  # name of the output file
 
 FALAISE="/vols/build/snemo/Falaise.build/bin/"                   # Falaise binaries location

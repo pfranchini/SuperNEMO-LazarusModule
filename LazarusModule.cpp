@@ -294,7 +294,7 @@ dpp::base_module::process_status LazarusModule::process(datatools::things& event
   
   // grab Calibrated Data bank
   try {
-  
+
     // To Read                    
     //const mctools::simulated_data& CD = event.get<mctools::simulated_data>("CD");
     calData = event.get<snemo::datamodel::calibrated_data>("CD");
@@ -318,33 +318,33 @@ dpp::base_module::process_status LazarusModule::process(datatools::things& event
       if (is_present)  // the dead cell is already present in the event's hits
 	break;
 	  
-      // ======= Select which method to use:
-      
+      // ======== Select which method to use: ========
+
+      // ==== Method 0: NONE: ====
+      if (method=="ALL") {
+	// Do absolute nothing
+      }
+	
       // ==== Method A: Resuscitate ALL the dead cells in each event: ====
-      if (method=="ALL") 	  
+      else if (method=="ALL") 	  
 	write_hit(k);
       
       // ==== Method B: Resuscitate ONLY cells NEAR a hit: ====
       else if (method=="NEAR") {
 	// Try to if this dead cell has any nearest neighbour
+
+	int layer_0 = dead_cells[k][1];
+	int row_0 = dead_cells[k][2];
+
 	for (const auto& oldTrackerHit : calData.calibrated_tracker_hits()) {
 
 	  int layer = oldTrackerHit->get_layer();
 	  int row = oldTrackerHit->get_row();
 
-	  int layer_0 = dead_cells[k][1];
-	  int row_0 = dead_cells[k][2];
-
 	  if (oldTrackerHit->get_side()==dead_cells[k][0]) // same side 
-	    // check if is in an adiacent cell
-	    if ( (( layer == layer_0+1 ) && ( row == row_0)) || 
-		 (( layer == layer_0-1 ) && ( row == row_0)) ||  
-		 (( layer == layer_0 )   && ( row == row_0+1)) ||		
-		 (( layer == layer_0 )   && ( row == row_0-1)) ||		
-		 (( layer == layer_0+1 ) && ( row == row_0+1)) ||		
-		 (( layer == layer_0+1 ) && ( row == row_0-1)) ||			
-		 (( layer == layer_0-1 ) && ( row == row_0+1)) ||			
-		 (( layer == layer_0-1 ) && ( row == row_0-1)) ) {
+	    // check if is in an adiacent cell looking at the distance
+	    if ( (sqrt(pow(layer-layer_0,2) + pow(row-row_0,2))==1) || (sqrt(pow(layer-layer_0,2) + pow(row-row_0,2))==sqrt(2)) ){
+	      //std::cout << layer << "," << row << " - " << layer_0 << "," << row_0 << std::endl;
 	      write_hit(k);
 	      break;
 	    }
@@ -353,9 +353,40 @@ dpp::base_module::process_status LazarusModule::process(datatools::things& event
       
       // ==== Method C: Resuscitate ONLY cells BETWEEN two hits: ====
       else if (method=="BETWEEN") {
-	// ....
+	// Try to if this dead cell has any nearest neighbour
+
+	int layer_0 = dead_cells[k][1];
+	int row_0 = dead_cells[k][2];
+	int layer_1 = 0;
+	int row_1 = 0;
+
+	for (const auto& oldTrackerHit : calData.calibrated_tracker_hits()) {
+
+	  int layer = oldTrackerHit->get_layer();
+	  int row = oldTrackerHit->get_row();
+
+	  if (oldTrackerHit->get_side()==dead_cells[k][0]) // same side 
+	    // check if is in an adiacent cell looking at the distance
+	    if ( (sqrt(pow(layer-layer_0,2) + pow(row-row_0,2))==1) || (sqrt(pow(layer-layer_0,2) + pow(row-row_0,2))==sqrt(2)) ){
+	      if (layer_1==0){
+		layer_1 = layer;
+		row_1 = row;
+	      }
+	      else {
+		// second hit adiacent to the dead cell
+		int layer_2 = layer;
+		int row_2 = row;
+		
+		// the two hits should not be close to each other (the dead cell should be in the middle)
+		if (sqrt(pow(layer_1-layer_2,2) + pow(row_1-row_2,2))>sqrt(2)) {
+		  std::cout << layer_0 << "," << row_0 << ": " << layer_1 << "," << row_1 << " - " << layer_2 << "," << row_2 <<std::endl;
+		  write_hit(k);
+		  break;
+		}
+	      }
+	    }
+	}
       } // Method C
-      
     }
     
     /*
