@@ -4,6 +4,8 @@
 
 *Paolo Franchini 2020* - p.franchini@imperial.ac.uk
 
+---
+
 SuperNEMO module to resuscitate hits in order to improve the reconstruction in the Tracker.
 
 The module resuscitate hits from the simulated data correspondent to a list of dead cells in the tracker.
