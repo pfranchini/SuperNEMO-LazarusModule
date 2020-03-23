@@ -28,6 +28,8 @@ std::string method = "ALL";
 int N_dead_cells;
 int dead_cells[2500][3];  // Define a matrix (side, layer, column) of dead cells 
 Long64_t hits = 0;
+double wz = 0.0; // [mm] halfway of the cells
+double wz_err = 1500.0; // [mm] uncertainty
 
 // Tracker dimensions
 const double d = 44.0; // [mm] sense wire distance
@@ -182,8 +184,6 @@ void write_hit(Long64_t index){
   // Write a particular hit on the list of dead cells into the output calibrated data
 
   double wx, wy; // x,y global coordinate in the detector
-  double wz = 0.0; // [mm] halfway of the cells
-  double wz_err = 1500.0; // [mm] uncertainty
   double rad = 11.0; // [mm] half radius of a cell
   double rad_err = 11.0;  // [mm] uncertainty
   int id; // counter for the hits in each event
@@ -196,8 +196,8 @@ void write_hit(Long64_t index){
     wx = dead_cells[index][1]*d+offsetx; 
     wy = dead_cells[index][2]*d+offsety;
   }
-  else {                  // French side
-    wx = -dead_cells[index][1]*d+offsetx; 
+  else {                      // French side
+    wx = -(dead_cells[index][1]*d+offsetx); 
     wy = dead_cells[index][2]*d+offsety;
   }                                                                                                   
   
@@ -310,7 +310,6 @@ dpp::base_module::process_status LazarusModule::process(datatools::things& event
       for (const auto& trackerHitHdl : new_calibrated_data->calibrated_tracker_hits()) {
 	if ( (trackerHitHdl->get_side()==dead_cells[k][0])&&(trackerHitHdl->get_layer()==dead_cells[k][1])&&(trackerHitHdl->get_row()==dead_cells[k][2]) ){    
 	  is_present=true;
-	  std::cout << "IS alread present" << std::endl;
 	  break;
 	}
       } 	
@@ -321,13 +320,16 @@ dpp::base_module::process_status LazarusModule::process(datatools::things& event
       // ======== Select which method to use: ========
 
       // ==== Method 0: NONE: ====
-      if (method=="ALL") {
+      if (method=="NONE") {
 	// Do absolute nothing
       }
 	
       // ==== Method A: Resuscitate ALL the dead cells in each event: ====
-      else if (method=="ALL") 	  
+      else if (method=="ALL"){
+	wz = 0.0; // [mm] halfway of the cells
+	wz_err = 1500.0; // [mm] uncertainty
 	write_hit(k);
+      }
       
       // ==== Method B: Resuscitate ONLY cells NEAR a hit: ====
       else if (method=="NEAR") {
@@ -344,7 +346,9 @@ dpp::base_module::process_status LazarusModule::process(datatools::things& event
 	  if (oldTrackerHit->get_side()==dead_cells[k][0]) // same side 
 	    // check if is in an adiacent cell looking at the distance
 	    if ( (sqrt(pow(layer-layer_0,2) + pow(row-row_0,2))==1) || (sqrt(pow(layer-layer_0,2) + pow(row-row_0,2))==sqrt(2)) ){
-	      //std::cout << layer << "," << row << " - " << layer_0 << "," << row_0 << std::endl;
+	      //std::cout << layer_0 << "," << row_0 << " - " << layer << "," << row << std::endl;
+	      wz = oldTrackerHit->get_z(); // use the same longitudinal position of the adiacent cell
+	      wz_err = oldTrackerHit->get_sigma_z(); // use the same error on the longitudinal position of the adiacent cell
 	      write_hit(k);
 	      break;
 	    }
@@ -357,8 +361,8 @@ dpp::base_module::process_status LazarusModule::process(datatools::things& event
 
 	int layer_0 = dead_cells[k][1];
 	int row_0 = dead_cells[k][2];
-	int layer_1 = 0;
-	int row_1 = 0;
+	int layer_1 = 999;
+	int row_1 = 999;
 
 	for (const auto& oldTrackerHit : calData.calibrated_tracker_hits()) {
 
@@ -368,9 +372,11 @@ dpp::base_module::process_status LazarusModule::process(datatools::things& event
 	  if (oldTrackerHit->get_side()==dead_cells[k][0]) // same side 
 	    // check if is in an adiacent cell looking at the distance
 	    if ( (sqrt(pow(layer-layer_0,2) + pow(row-row_0,2))==1) || (sqrt(pow(layer-layer_0,2) + pow(row-row_0,2))==sqrt(2)) ){
-	      if (layer_1==0){
+	      if ((layer_1==999) && (row_1==999)){
 		layer_1 = layer;
 		row_1 = row;
+		wz = oldTrackerHit->get_z(); // get the longitudinal position from the first adiacent cell
+		wz_err = oldTrackerHit->get_sigma_z(); // get the error from the first adiacent cell
 	      }
 	      else {
 		// second hit adiacent to the dead cell
@@ -379,7 +385,9 @@ dpp::base_module::process_status LazarusModule::process(datatools::things& event
 		
 		// the two hits should not be close to each other (the dead cell should be in the middle)
 		if (sqrt(pow(layer_1-layer_2,2) + pow(row_1-row_2,2))>sqrt(2)) {
-		  std::cout << layer_0 << "," << row_0 << ": " << layer_1 << "," << row_1 << " - " << layer_2 << "," << row_2 <<std::endl;
+		  //std::cout << layer_0 << "," << row_0 << ": " << layer_1 << "," << row_1 << " - " << layer_2 << "," << row_2 <<std::endl;
+		  wz = (wz + oldTrackerHit->get_z())/2; // use the average longitudinal position of the two adiacent cells 
+		  wz_err = sqrt(pow(wz_err,2) + pow(oldTrackerHit->get_sigma_z(),2)); // use the error from the longitudinal position erro of the two adiacent cells 
 		  write_hit(k);
 		  break;
 		}
@@ -387,41 +395,7 @@ dpp::base_module::process_status LazarusModule::process(datatools::things& event
 	    }
 	}
       } // Method C
-    }
-    
-    /*
-      
-      hits++;  // counts the number of hits for all the events
-      
-      kill=false;
-      // Find if this hit of this event is on any dead cell or not   
-      for (Long64_t k=0; k<N_dead_cells; k++){
-      if ( (trackerHitHdl->get_side()==dead_cells[k][0])&&(trackerHitHdl->get_layer()==dead_cells[k][1])&&(trackerHitHdl->get_row()==dead_cells[k][2]) ){  // is dead
-      kill=true;
-      killed++;
-      /*i = &trackerHitHdl - &calData.calibrated_tracker_hits()[0];
-      std::cout << "hit to be removed: " << i << std::endl;
-      std::cout << "Tracker Hit: " << trackerHitHdl->get_x() << "," << trackerHitHdl->get_y() << "," << trackerHitHdl->get_z() << std::endl;
-      std::cout << "             " << trackerHitHdl->get_side() << "," << trackerHitHdl->get_layer() << "," << trackerHitHdl->get_row() << std::endl;
-      
-      break; // ends loop since the hit is already on one dead cell      
-      }
-      } // end loop in the killing procedure  
-      
-      if (!kill){ // keeps the Tracker data
-      new_hit_handle = trackerHitHdl;
-      new_calibrated_data->calibrated_tracker_hits().push_back(new_hit_handle);
-      }
-      } // end loop in the tracker hits
-    */
-    
-    // Print output                                                                                                                                                    
-    /*const auto& calData2 = workItem.get<snemo::datamodel::calibrated_data>("CD");
-      for (const auto& hit : calData2.calibrated_tracker_hits()) {
-      std::cout << "Saved Hit: " << hit->get_x() << "," << hit->get_y() << "," << hit->get_z() << std::endl;
-      std::cout << "           " << hit->get_side() << "," << hit->get_layer() << "," << hit->get_row() << std::endl;
-      }
-    */
+    } // loops in the dead cells vector 
     
     // Calorimeter data kept in any case
     new_calibrated_data->calibrated_calorimeter_hits() = calData.calibrated_calorimeter_hits();

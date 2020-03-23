@@ -27,6 +27,7 @@ rm -f ${WHERE}/${FILE}*
 echo -e "\nReconstruct only with the calibration..."
 ${FALAISE}flreconstruct -i ${INPUT} -p ../official-2.0.0_only_calibration.conf -o ${WHERE}/${FILE}-cal.brio &> /dev/null
 if [[ "$?" -ne "0" ]]; then
+    echo "Problem in flreconstruct..."
     exit
 fi
 

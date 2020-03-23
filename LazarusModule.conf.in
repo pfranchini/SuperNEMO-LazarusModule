@@ -24,5 +24,5 @@ modules : string[1] = "Lazarus"
 # - Module configuration:
 [name="Lazarus" type="LazarusModule"]
 filename_out : string[1] = "test-output.brio"
-dead_cells : string[1] = "/home/hep/pfranchi/SuperNEMO/SuperNEMO-DeadCellsModule.build/random_dead_cells_300.txt"	# file with a list of dead cells (side, layer, column)
+dead_cells : string[1] = "random_dead_cells_100.txt"	# file with a list of dead cells (side, layer, column)
 method : string[1] = "ALL" # method for the resuscitation (NONE, ALL, NEAR, BETWEEN)
